@@ -30,6 +30,11 @@ var (
 // PostRepr is a post model
 type PostRepr struct {
 	data *Post
+	rh   *repoHandler
+}
+
+func (p *PostRepr) getReadCounter() int {
+	return p.rh.updateReadCounter(p.data.ID)
 }
 
 // ID returns ID field value
@@ -65,7 +70,8 @@ func (p *PostRepr) URI(ctx context.Context) *string {
 
 // READCOUNT returns ReadCount field value
 func (p *PostRepr) READCOUNT(ctx context.Context) *int32 {
-	return &p.data.ReadCount
+	count := int32(p.getReadCounter())
+	return &count
 }
 
 // Post represents DB structure of post entity
@@ -265,8 +271,10 @@ func (h *repoHandler) getPost(id int32) (*PostRepr, error) {
 		postCache := &Post{}
 		json.Unmarshal([]byte(cachedData), postCache)
 
-		postCache.ReadCount = int32(h.rdh.updateReadCounter(redPostKey, fmt.Sprintf("%d", id)))
-		return &PostRepr{data: postCache}, nil
+		return &PostRepr{
+			data: postCache,
+			rh:   h,
+		}, nil
 	}
 
 	// read from db
@@ -293,9 +301,10 @@ func (h *repoHandler) getPost(id int32) (*PostRepr, error) {
 		log.Panic(err)
 	}
 
-	post.ReadCount = int32(h.rdh.updateReadCounter(redPostKey, fmt.Sprintf("%d", id)))
-
-	return &PostRepr{data: post}, nil
+	return &PostRepr{
+		data: post,
+		rh:   h,
+	}, nil
 }
 
 func (h *repoHandler) getPostList() ([]*PostRepr, error) {
@@ -308,11 +317,10 @@ func (h *repoHandler) getPostList() ([]*PostRepr, error) {
 		pl := make([]*PostRepr, 0, len(postListCache))
 
 		for idx := range postListCache {
-			pr := &PostRepr{data: &postListCache[idx]}
-			pr.data.ReadCount = int32(h.rdh.updateReadCounter(
-				redPostKey,
-				fmt.Sprintf("%d", postListCache[idx].ID)),
-			)
+			pr := &PostRepr{
+				data: &postListCache[idx],
+				rh:   h,
+			}
 			pl = append(pl, pr)
 
 		}
@@ -328,7 +336,10 @@ func (h *repoHandler) getPostList() ([]*PostRepr, error) {
 	}
 	posrRP := make([]*PostRepr, 0, len(posts))
 	for _, post := range posts {
-		posrRP = append(posrRP, &PostRepr{data: post})
+		posrRP = append(posrRP, &PostRepr{
+			data: post,
+			rh:   h,
+		})
 	}
 
 	// update cache
@@ -350,10 +361,6 @@ func (h *repoHandler) getPostList() ([]*PostRepr, error) {
 	)
 	if err != nil {
 		log.Panic(err)
-	}
-
-	for idx := range posrRP {
-		posrRP[idx].data.ReadCount = int32(h.rdh.updateReadCounter(redPostKey, fmt.Sprintf("%d", posrRP[idx].data.ID)))
 	}
 
 	return posrRP, nil
@@ -394,8 +401,10 @@ func (h *repoHandler) updatePost(id int32, post postInput) (*PostRepr, error) {
 		h.rdh.updateChangeCounter(redPostListKey, "")
 		h.rdh.updateChangeCounter(redPostKey, fmt.Sprintf("%d", updPost.ID))
 	}
-	updPost.ReadCount = int32(h.rdh.updateReadCounter(redPostKey, fmt.Sprintf("%d", updPost.ID)))
-	return &PostRepr{data: updPost}, err
+	return &PostRepr{
+		data: updPost,
+		rh:   h,
+	}, err
 }
 
 func (h *repoHandler) deletePost(id int32) error {
@@ -408,6 +417,10 @@ func (h *repoHandler) deletePost(id int32) error {
 		h.rdh.updateChangeCounter(redPostKey, fmt.Sprintf("%d", id))
 	}
 	return err
+}
+
+func (h *repoHandler) updateReadCounter(id int32) int {
+	return int(h.rdh.updateReadCounter(redPostKey, fmt.Sprintf("%d", id)))
 }
 
 func (h *repoHandler) shutdown() {

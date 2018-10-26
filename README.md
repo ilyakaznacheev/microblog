@@ -13,7 +13,7 @@ To start server please adjust ```config.json``` and run package:
 ```bash
 go run *.go
 ```
-And then your GraphQL server will be available at the adress from ```config.json``` (default ```localhost:8080```).
+And then your GraphQL server will be available at the address from ```config.json``` (default ```localhost:8080```).
 
 ## Service provides following actions:
 
