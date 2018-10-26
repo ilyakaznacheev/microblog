@@ -1,0 +1,19 @@
+{
+    "database": {
+        "user": "gochanuser",
+        "pass": "gochanpass",
+        "name": "postgres",
+        "SSL":  "disable",
+        "address": "localhost"
+    },
+    "redis": {
+        "address": "localhost:6379",
+        "password": "",
+        "database": 0
+    },
+    "host": {
+        "address": "localhost",
+        "port":    "8080"
+    },
+    "schemagql": "./schema.graphql"
+}
